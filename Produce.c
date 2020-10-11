@@ -6,35 +6,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <string.h>
-#define MAX_SIZE 8
+#include "buffer.h"
 #define MAX_LINE 15 /* The maximum length command */
-
-typedef struct bufferStruct {
-    int in;
-    int out;
-    int content[MAX_SIZE];// will hold items produced (single int)
-} bufferStruct; 
-
-int bufferNextIn(bufferStruct *buf) {
-    if (buf->in + 1 == MAX_SIZE) {
-        return 0;
-    }
-    return buf->in + 1;
-}
-
-int isEmpty(bufferStruct *buf) {
-    if (buf->in == buf->out) {
-        return 1;
-    }
-    return 0;
-}
-
-int isFull(bufferStruct *buf) {
-    if (bufferNextIn(buf) == buf->out) {
-        return 1;
-    }
-    return 0;
-}
 
 void produce(bufferStruct *localPTR) {
     if (isFull(localPTR)) {
@@ -44,16 +17,6 @@ void produce(bufferStruct *localPTR) {
     localPTR->content[localPTR->in] = rand() % 100;
     localPTR->in = localPTR->in + 1;
     if (localPTR->in == MAX_SIZE) localPTR->in = 0;
-}
-
-void consume(bufferStruct *localPTR) {
-    if (isEmpty(localPTR)) {
-        printf("<Buffer is empty>\n");
-        return;
-    }
-    printf("%d consumed\n", localPTR->content[localPTR->out]);
-    localPTR->out = localPTR->out + 1;
-    if (localPTR->out == MAX_SIZE) localPTR->out = 0;
 }
 
 void printBuffer(bufferStruct *localPTR) {
@@ -75,10 +38,6 @@ void removeshm(int shmid) {
     printf("Shared memory segment marked for deletion\n");
 }
 
-void usage() {
-    fprintf(stderr, "p -> produce | c -> consume | r -> read | d -> delete | q -> quit \n");
-}
-
 int main() {
     key_t key;
     int shmid, cntr;
@@ -91,7 +50,7 @@ int main() {
     /* Intializes random number generator */
     srand((unsigned) time(&t));
 
-    key = ftok(".", 'S');
+    key = ftok(PATH_NAME, PROJ_ID);
     if ((shmid = shmget(key, sizeof(&buf), IPC_CREAT|IPC_EXCL|0666)) == -1) {
         printf("Shared memory segment exists - opening as client\n");
         if ((shmid = shmget(key, sizeof(&buf), 0)) == -1) {
@@ -113,24 +72,12 @@ int main() {
         fgets(cmdBuf, MAX_LINE, stdin); 
 
         switch (cmdBuf[0]) {
-            case 'p':
-                produce(localPTR);
-                printBuffer(localPTR);
-                break;
-            case 'c':
-                consume(localPTR);
-                printBuffer(localPTR);
-                break;
-            case 'r':
-                printBuffer(localPTR);
-                break;
-            case 'd':
-                removeshm(shmid);
-                break;
-            case 'q':
+            case '0':
                 shouldRun = 0;
                 break;
-            default: usage();
+            default:
+                produce(localPTR);
+                printBuffer(localPTR);
         }
     }
 
