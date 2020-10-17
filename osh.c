@@ -12,7 +12,7 @@ void removeSpaces(char *str) {
         if (str[i] != ' ' && str[i] != '\n') 
             str[count++] = str[i];
     str[count] = '\0'; 
-} 
+}
 
 int main(void) {
     char *args[MAX_LINE/2 + 1]; /* command line arguments */
